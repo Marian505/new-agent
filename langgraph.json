@@ -6,11 +6,5 @@
     "lg_agent": "./lg_agent.py:agent",
     "deep_agent": "./deep_agent.py:agent"
   },
-  "env": ".env",
-  "checkpointer": {
-    "type": "postgres",
-    "config": {
-      "conn_string": "postgresql://kali:kali@192.168.100.12:5432/langgraph?options=-csearch_path%3Dlg"
-    }
-  }
+  "env": ".env"
 }
