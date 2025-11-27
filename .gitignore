@@ -1,2 +1,4 @@
 /.idea/
 /.langgraph_api/
+/.env
+/utils/
