@@ -1,10 +1,10 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "agent": "./agent.py:agent",
-    "lc_agent": "./lc_agent.py:agent",
-    "lg_agent": "./lg_agent.py:agent",
-    "deep_agent": "./deep_agent.py:agent"
+    "agent": "./src/agent.py:agent",
+    "lc_agent": "./src/lc_agent.py:agent",
+    "lg_agent": "./src/lg_agent.py:agent",
+    "deep_agent": "./src/deep_agent.py:agent"
   },
   "env": ".env"
 }
