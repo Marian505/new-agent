@@ -6,5 +6,5 @@
     "lg_agent": "./src/lg_agent.py:agent",
     "deep_agent": "./src/deep_agent.py:agent"
   },
-  "env": ".env"
+  "env": "./.env"
 }
