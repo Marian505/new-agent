@@ -29,7 +29,7 @@ def test_evaluate():
 
     dataset = client.create_dataset("my_dataset4")
     client.create_example(
-        inputs={"messages": [HumanMessage(content="What's the weather in Seattle?")]},
+        inputs={"messages": [HumanMessage(content="What's the weather in Java?")]},
         outputs={"messages": [AIMessage("Java is programming language.")]},
         dataset_id=dataset.id
     )
