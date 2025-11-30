@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "agentevals>=0.0.9",
+    "beautifulsoup4>=4.14.2",
     "deepagents>=0.2.8",
     "dotenv>=0.9.9",
     "langchain>=1.0.8",

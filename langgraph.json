@@ -1,11 +1,12 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "agent": "./src/agent.py:agent",
+    "basic_agent": "./src/basic_agent.py:agent",
     "lc_agent": "./src/lc_agent.py:agent",
     "lg_agent": "./src/lg_agent.py:agent",
     "deep_agent": "./src/deep_agent.py:agent",
-    "lg_workflow": "./src/lg_workflow.py:graph"
+    "lg_workflow": "./src/lg_workflow.py:graph",
+    "rag_agent": "./src/rag_agent.py:agent"
   },
   "env": "./.env"
 }
