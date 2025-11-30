@@ -3,7 +3,7 @@ import pytest
 from langsmith import testing as t
 from langchain_core.messages import HumanMessage
 
-from lc_agent import agent, Context
+from lc_agent import agent
 
 @pytest.mark.langsmith(test_suite_name="test_lc_agent")
 def test_lc_agent():
@@ -11,8 +11,7 @@ def test_lc_agent():
         {
             "messages": [HumanMessage("What is java?")],
             "user_preferences": {"style": "technical", "verbosity": "detailed"},
-        },
-        context=Context(user_name="John Smith")
+        }
     )
 
     print(result["structured_response"])
