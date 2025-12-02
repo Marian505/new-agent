@@ -1,4 +1,9 @@
 /.idea/
+/.vscode/
+/.venv/
 /.langgraph_api/
 /.env
 /utils/
+/data/
+*.pyc
+*.egg-info

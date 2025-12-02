@@ -13,10 +13,12 @@ dependencies = [
     "langchain-anthropic>=1.2.0",
     "langchain-community>=0.4.1",
     "langchain-google-genai>=3.1.0",
+    "langchain-openai>=1.1.0",
     "langchain-tavily>=0.2.13",
     "langgraph>=1.0.3",
     "langsmith[pytest]>=0.4.46",
     "pypdf>=6.4.0",
+    "pyppeteer>=2.0.0",
     "python-dotenv>=1.2.1",
     "tavily>=1.1.0",
 ]
