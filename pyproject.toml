@@ -16,7 +16,6 @@ dependencies = [
     "langchain-tavily>=0.2.13",
     "langgraph>=1.0.3",
     "pypdf>=6.4.0",
-    "pyppeteer>=2.0.0",
     "python-dotenv>=1.2.1",
     "tavily>=1.1.0",
     "xhtml2pdf>=0.2.17",
