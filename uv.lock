@@ -571,17 +571,6 @@ wheels = [
 ]
 
 [[package]]
-name = "dotenv"
-version = "0.9.9"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "python-dotenv" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/b7/545d2c10c1fc15e48653c91efde329a790f2eecfbbf2bd16003b5db2bab0/dotenv-0.9.9-py2.py3-none-any.whl", hash = "sha256:29cf74a087b31dafdb5a446b6d7e11cbce8ed2741540e2339c69fbef92c94ce9", size = 1892, upload-time = "2025-02-19T22:15:01.647Z" },
-]
-
-[[package]]
 name = "filetype"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1739,7 +1728,6 @@ dependencies = [
     { name = "agentevals" },
     { name = "beautifulsoup4" },
     { name = "deepagents" },
-    { name = "dotenv" },
     { name = "langchain" },
     { name = "langchain-anthropic" },
     { name = "langchain-community" },
@@ -1747,8 +1735,6 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "langchain-tavily" },
     { name = "langgraph" },
-    { name = "langgraph-api" },
-    { name = "langsmith", extra = ["pytest"] },
     { name = "pypdf" },
     { name = "pyppeteer" },
     { name = "python-dotenv" },
@@ -1760,6 +1746,7 @@ dependencies = [
 dev = [
     { name = "debugpy" },
     { name = "langgraph-cli", extra = ["inmem"] },
+    { name = "langsmith", extra = ["pytest"] },
     { name = "pytest" },
 ]
 
@@ -1768,7 +1755,6 @@ requires-dist = [
     { name = "agentevals", specifier = ">=0.0.9" },
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
     { name = "deepagents", specifier = ">=0.2.8" },
-    { name = "dotenv", specifier = ">=0.9.9" },
     { name = "langchain", specifier = ">=1.0.8" },
     { name = "langchain-anthropic", specifier = ">=1.2.0" },
     { name = "langchain-community", specifier = ">=0.4.1" },
@@ -1776,8 +1762,6 @@ requires-dist = [
     { name = "langchain-openai", specifier = ">=1.1.0" },
     { name = "langchain-tavily", specifier = ">=0.2.13" },
     { name = "langgraph", specifier = ">=1.0.3" },
-    { name = "langgraph-api", specifier = ">=0.5.27" },
-    { name = "langsmith", extras = ["pytest"], specifier = ">=0.4.46" },
     { name = "pypdf", specifier = ">=6.4.0" },
     { name = "pyppeteer", specifier = ">=2.0.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
@@ -1789,6 +1773,7 @@ requires-dist = [
 dev = [
     { name = "debugpy", specifier = ">=1.8.17" },
     { name = "langgraph-cli", extras = ["inmem"], specifier = ">=0.4.7" },
+    { name = "langsmith", extras = ["pytest"], specifier = ">=0.4.46" },
     { name = "pytest", specifier = ">=9.0.1" },
 ]
 

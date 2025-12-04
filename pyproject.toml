@@ -8,7 +8,6 @@ dependencies = [
     "agentevals>=0.0.9",
     "beautifulsoup4>=4.14.2",
     "deepagents>=0.2.8",
-    "dotenv>=0.9.9",
     "langchain>=1.0.8",
     "langchain-anthropic>=1.2.0",
     "langchain-community>=0.4.1",
@@ -16,8 +15,6 @@ dependencies = [
     "langchain-openai>=1.1.0",
     "langchain-tavily>=0.2.13",
     "langgraph>=1.0.3",
-    "langgraph-api>=0.5.27",
-    "langsmith[pytest]>=0.4.46",
     "pypdf>=6.4.0",
     "pyppeteer>=2.0.0",
     "python-dotenv>=1.2.1",
@@ -29,6 +26,7 @@ dependencies = [
 dev = [
     "debugpy>=1.8.17",
     "langgraph-cli[inmem]>=0.4.7",
+    "langsmith[pytest]>=0.4.46",
     "pytest>=9.0.1",
 ]
 
