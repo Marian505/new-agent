@@ -1,16 +1,17 @@
-import asyncio
 import os
 import logging
 
 from dotenv import load_dotenv
 from langchain.agents import create_agent, AgentState
-from langchain.agents.middleware import before_model, after_model
+from langchain.agents.middleware import before_model, after_model, before_agent, \
+    SummarizationMiddleware, HumanInTheLoopMiddleware, PIIMiddleware
 from langchain.chat_models import init_chat_model
 from langchain_community.agent_toolkits import FileManagementToolkit
-from langchain_core.tools import tool
 from langchain_tavily import TavilySearch
 from langgraph.runtime import Runtime
-from pyppeteer import launch
+from xhtml2pdf import pisa
+from langchain.tools import tool
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -18,11 +19,12 @@ logger = logging.getLogger(__name__)
 
 search = TavilySearch(max_results=3)
 file_tools = FileManagementToolkit(root_dir=str(os.getcwd() + "/files")).get_tools()
+model=init_chat_model("claude-haiku-4-5-20251001", temperature=0.0)
+smart_model = init_chat_model("claude-sonnet-4-5-20250929", temperature=0.0)
 
 @before_model
 def log_before_model(state: AgentState, runtime: Runtime) -> dict | None:
-    # print(f"\nlog_before_model Sate:\n{state['messages'][0].content[1]['type']}")
-    # print(f"\nlog_before_model mime_type:\n{state['messages'][0].content[1]['file']}")
+    # print(f"\nlog_before_model Sate:\n{state}")
     print(f"\nCompleted request for user:\n{runtime}")
     return None
 
@@ -30,74 +32,41 @@ def log_before_model(state: AgentState, runtime: Runtime) -> dict | None:
 def log_after_model(state: AgentState, runtime: Runtime) -> dict | None:
     # print(f"\nlog_after_model Sate:\n{state}")
     print(f"\nCompleted request for user:\n{runtime}")
-    # print(f"Completed request for user: {runtime.context.user_name}")
     return None
 
+class EnhancedPropmpt(BaseModel):
+    original_prompt: str
+    enhanced_prompt: str
 
-IS_LOCAL = os.getenv("ENVIRONMENT", "local").lower() == "local"
-BROWSER_PATH = os.getenv("BROWSER_EXECUTABLE_PATH")
+structured_model = model.with_structured_output(EnhancedPropmpt)
 
-_browser = None
-_browser_lock = asyncio.Lock()
+@before_agent 
+def prompt_enhance(state: AgentState, runtime: Runtime):
+    prompt = state["messages"][-1].content
+    prompt_len = len(prompt)
+    model_instructions = f"""
+        Enhance added prompt, fix typos, add capital letters, and special chars like '.,?!', correct gramar.
+        Minimal enhanced prompt length is: {prompt_len*2}
+        Maximal enhanced prompt length is: {prompt_len*3}
+        Prompt: {prompt}
+    """
+    result = structured_model.invoke(model_instructions)
 
-async def get_browser():
-    """Get or create browser instance."""
-    global _browser
-    
-    async with _browser_lock:
-        if _browser is not None:
-            return _browser
-        
-        try:
-            if IS_LOCAL and BROWSER_PATH:
-                logger.info(f"Local mode: Launching browser from {BROWSER_PATH}")
-                _browser = await launch(
-                    executablePath=BROWSER_PATH,
-                    headless=True,
-                    args=["--no-sandbox"]
-                )
-            else:
-                logger.info("Production mode: Auto-detecting browser")
-                _browser = await launch(
-                    headless=True,
-                    args=["--no-sandbox", "--disable-gpu"]
-                )
-            
-            logger.info("Browser launched successfully")
-            return _browser
-            
-        except Exception as e:
-            logger.error(f"Failed to launch browser: {e}")
-            raise
-
-def _prepare_pdf_directory():
-    """Synchronous helper for file operations."""
-    current_dir = os.getcwd()
-    pdf_dir = os.path.join(current_dir, "files")
-    os.makedirs(pdf_dir, exist_ok=True)
-    return os.path.join(pdf_dir, "output.pdf")
+    state["messages"][-1].content = result.enhanced_prompt
+    return None
 
 @tool
-async def generate_pdf_from_html(html_content: str) -> str:
+def simple_pdf_from_html(html_content: str):
     """Tool for create PDF from HTML. And save the PDF to the folder.
     Function parameter has to be just valid HTML in string.
     """
-    try:
-        pdf_path = await asyncio.to_thread(_prepare_pdf_directory)
+    # TODO: works, but replace some web service pdf generator, pyppeteer is too havy run in langsmith deployment
+    with open(os.getcwd() + "/files/resume.pdf", "w+b") as pdf_file:
+        pisa.CreatePDF(html_content, dest=pdf_file)
 
-        browser = await get_browser()
-        page = await browser.newPage()
-        await page.setContent(html_content)
-        await page.pdf({'path': pdf_path, 'format': 'A4', 'margin': {'top': '10mm', 'bottom': '10mm'}})
-        await browser.close()
-
-        return "PDF generated successfully."
-    except Exception as e:
-        logger.error(f"PDF generation failed: {e}")
-        return f"Error: {str(e)}"
+    return "PDF generated successfully."
 
 
-print(f"lc pid: {os.getpid()}")
 system_prompt="""
     You CV assistant. 
     You will read and analyze PDF on user demand. 
@@ -105,8 +74,23 @@ system_prompt="""
     For PDF generation use tool generate_pdf_from_html on user demand.
 """
 agent = create_agent(
-    model=init_chat_model("claude-haiku-4-5-20251001", temperature=0.0),
-    tools=[generate_pdf_from_html] + file_tools,
-    middleware=[log_before_model, log_after_model],
+    model=model,
+    tools=[simple_pdf_from_html] + file_tools,
+    middleware=[
+        prompt_enhance
+        # log_before_model,
+        # PIIMiddleware("ip", strategy="mask", apply_to_input=True),
+        # PIIMiddleware("api_key", detector=r"sk-[a-zA-Z0-9]", strategy="redact", apply_to_input=True),
+        # SummarizationMiddleware(
+        #     model="claude-haiku-4-5-20251001",
+        #     trigger=("tokens", 10000),
+        #     keep=("messages", 3),
+        # ),
+        # HumanInTheLoopMiddleware(
+        #     interrupt_on={
+        #         "simple_pdf_from_html": True,
+        #     }
+        # ),
+    ],
     system_prompt=system_prompt
 )
