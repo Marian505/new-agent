@@ -9,7 +9,7 @@ from langchain.chat_models import init_chat_model
 from langchain_community.agent_toolkits import FileManagementToolkit
 from langchain_tavily import TavilySearch
 from langgraph.runtime import Runtime
-from xhtml2pdf import pisa
+# from xhtml2pdf import pisa
 from langchain.tools import tool
 from pydantic import BaseModel
 
@@ -55,16 +55,16 @@ def prompt_enhance(state: AgentState, runtime: Runtime):
     state["messages"][-1].content = result.enhanced_prompt
     return None
 
-@tool
-def simple_pdf_from_html(html_content: str):
-    """Tool for create PDF from HTML. And save the PDF to the folder.
-    Function parameter has to be just valid HTML in string.
-    """
-    # TODO: works, but replace some web service pdf generator, pyppeteer is too havy run in langsmith deployment
-    with open(os.getcwd() + "/files/resume.pdf", "w+b") as pdf_file:
-        pisa.CreatePDF(html_content, dest=pdf_file)
+# @tool
+# def simple_pdf_from_html(html_content: str):
+#     """Tool for create PDF from HTML. And save the PDF to the folder.
+#     Function parameter has to be just valid HTML in string.
+#     """
+#     # TODO: works, but replace some web service pdf generator, pyppeteer is too havy run in langsmith deployment
+#     with open(os.getcwd() + "/files/resume.pdf", "w+b") as pdf_file:
+#         pisa.CreatePDF(html_content, dest=pdf_file)
 
-    return "PDF generated successfully."
+#     return "PDF generated successfully."
 
 
 system_prompt="""
@@ -75,7 +75,7 @@ system_prompt="""
 """
 agent = create_agent(
     model=model,
-    tools=[simple_pdf_from_html] + file_tools,
+    tools=file_tools,
     middleware=[
         prompt_enhance
         # log_before_model,
