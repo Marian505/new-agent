@@ -17,11 +17,8 @@ def test_trajectory_quality():
         context=Context(user_name="John Smith")
     )
 
-    evaluation = evaluator(
-        outputs=result["messages"],
-    )
-    print(f"evaluation: {evaluation}")
-
+    evaluation = evaluator(outputs=result["messages"])
+    # print(f"evaluation: {evaluation}")
     assert evaluation["score"] is True
 
 def test_evaluate():
@@ -42,8 +39,6 @@ def test_evaluate():
     def run_agent(inputs):
         """Your agent function that returns trajectory messages."""
         return agent.invoke(inputs, context=Context(user_name="Majo"))["messages"]
-
-
 
     experiment_results = client.evaluate(
         run_agent,

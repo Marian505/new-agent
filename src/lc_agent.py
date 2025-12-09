@@ -12,6 +12,7 @@ from langgraph.runtime import Runtime
 # from xhtml2pdf import pisa
 from langchain.tools import tool
 from pydantic import BaseModel
+import httpx 
 
 load_dotenv()
 
@@ -66,6 +67,19 @@ def prompt_enhance(state: AgentState, runtime: Runtime):
 
 #     return "PDF generated successfully."
 
+@tool
+async def html_to_pdf(html: str):
+    """Tool for create PDF from HTML.
+    Function parameter has to be just valid HTML in string.
+    """
+    async with httpx.AsyncClient() as client:
+        resposne = await client.post(
+            "https://pdf.weakpass.org/api/html-to-pdf",
+            content=html,
+            headers={"Content-Type": "text/html"}
+        ) 
+        print(f"resposne:\n{resposne.content}")
+    return "PDF generated"
 
 system_prompt="""
     You CV assistant. 
@@ -75,7 +89,7 @@ system_prompt="""
 """
 agent = create_agent(
     model=model,
-    tools=file_tools,
+    tools=file_tools + [html_to_pdf],
     middleware=[
         prompt_enhance
         # log_before_model,

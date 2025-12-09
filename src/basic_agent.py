@@ -10,5 +10,6 @@ system_prompt = "You are a helpful assistant with web search tool."
 
 agent = create_agent(
     model = "claude-sonnet-4-5-20250929",
+    tools=[search],
     system_prompt=system_prompt
 )

@@ -12,8 +12,6 @@ def test_rag_agent_call_tool():
 
     result = agent.invoke({"messages": [HumanMessage(content="What is Self-Reflection?")]})
 
-    for message in result['messages']:
-        print(f"\n{type(message)}:\n{message}\n\n")
-
-    print(f"\ntool_calls: {result['messages'][1].tool_calls}")
-    assert "retrieve_context" in result['messages'][1].tool_calls[0]['name']
+    tool_massage = next(message for message in result["messages"] if message.__class__.__name__ == "ToolMessage")
+    assert tool_massage is not None
+    assert tool_massage.name == "retrieve_context"

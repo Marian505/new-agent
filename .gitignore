@@ -3,7 +3,7 @@
 /.venv/
 /.langgraph_api/
 /.env
-/utils/
+/todo/
 /data/
 *.pyc
 *.egg-info
