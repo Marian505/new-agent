@@ -5,11 +5,13 @@ from dotenv import load_dotenv
 from deepagents import create_deep_agent
 from langchain_community.agent_toolkits import FileManagementToolkit
 from tavily import TavilyClient
+from langchain.chat_models import init_chat_model
 
 load_dotenv()
 
 tavily_client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
 file_tools = FileManagementToolkit(root_dir=str(os.getcwd() + "/files")).get_tools()
+fast_model=init_chat_model("claude-haiku-4-5-20251001", temperature=0.0)
 
 def internet_search(
         query: str,
@@ -35,7 +37,7 @@ subagents = [
 ]
 
 agent = create_deep_agent(
-    model="claude-sonnet-4-5-20250929",
+    model=fast_model,
     system_prompt="You are a helpful assistant. Use subagents for specialized tasks.",
     tools=file_tools,
     subagents=subagents
