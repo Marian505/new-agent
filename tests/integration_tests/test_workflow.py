@@ -49,6 +49,7 @@ def test_smart_workflow(graph):
     assert "model_type" in result
     assert "smart" in result['model_type']
 
+# this test is too long and expensive
 # @pytest.mark.langsmith(test_suite_name="test_premium_workflow")
 # def test_premium_workflow(graph):
 #     config = {"configurable": {"thread_id": "test_workflow"}}
