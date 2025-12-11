@@ -32,7 +32,7 @@ async def html_to_pdf(html: str, runtime: ToolRuntime[ContextSchema]) -> str:
         if response.status_code != 200:
             raise ValueError(f"PDF API failed: {response.status_code}")
 
-    # TODO: no prod version
+    # TODO: no prod version, for ptod store in S3
     if runtime.context.pdf_path is not None:
         pdf_path = runtime.context.pdf_path
         pdf_bytes = base64.b64decode(response.json()['pdf_base64'])
