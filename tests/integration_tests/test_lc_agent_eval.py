@@ -11,12 +11,7 @@ def test_trajectory_quality():
         model="claude-sonnet-4-5-20250929",
         prompt=TRAJECTORY_ACCURACY_PROMPT,
     )
-
-    result = agent.invoke(
-        {"messages": [HumanMessage(content="What's the weather in Seattle?")]},
-        context=Context(user_name="John Smith")
-    )
-
+    result = agent.invoke({"messages": [HumanMessage(content="What's the weather in Seattle?")]})
     evaluation = evaluator(outputs=result["messages"])
     # print(f"evaluation: {evaluation}")
     assert evaluation["score"] is True
@@ -26,7 +21,7 @@ def test_evaluate():
 
     dataset = client.create_dataset("my_dataset4")
     client.create_example(
-        inputs={"messages": [HumanMessage(content="What's the weather in Java?")]},
+        inputs={"messages": [HumanMessage(content="What is Java?")]},
         outputs={"messages": [AIMessage("Java is programming language.")]},
         dataset_id=dataset.id
     )
@@ -38,7 +33,8 @@ def test_evaluate():
 
     def run_agent(inputs):
         """Your agent function that returns trajectory messages."""
-        return agent.invoke(inputs, context=Context(user_name="Majo"))["messages"]
+        result = agent.invoke(inputs, context=Context(user_name="Majo"))
+        return result["messages"]
 
     experiment_results = client.evaluate(
         run_agent,
