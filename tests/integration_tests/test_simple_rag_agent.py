@@ -1,32 +1,31 @@
-from typing import Annotated, TypedDict
-from langsmith import Client
-
 import pytest
-from langchain.chat_models import init_chat_model
+from typing import Annotated, TypedDict
+import pytest_asyncio
 from rich.pretty import pprint
+
+from langsmith import AsyncClient
+from langsmith.evaluation import aevaluate
+from langchain_anthropic import ChatAnthropic
+
 from simple_rag_agent import SimpleRagAgent
 
 fast_model = None
 
-@pytest.fixture
-def client() -> Client:
-    return Client()
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_fast_model():
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def setup_fast_model():
     global fast_model
-    fast_model = init_chat_model("claude-haiku-4-5-20251001", temperature=0.0)
+    fast_model = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0.0)
 
-def groundedness(outputs: dict) -> dict:
+@pytest_asyncio.fixture
+async def client() -> AsyncClient:
+    return AsyncClient()
+
+async def groundedness(outputs: dict) -> dict:
     """A simple evaluator for RAG answer groundedness."""
 
     class GroundedGrade(TypedDict):
         explanation: Annotated[str, ..., "Explain your reasoning for the score"]
-        grounded: Annotated[
-            int,
-            ...,
-            "Provide the score on if the answer hallucinates from the documents",
-        ]
+        grounded: Annotated[int, ..., "Provide the score on if the answer hallucinates from the documents",]
 
     grounded_instructions = """You are a teacher grading a quiz. You will be given FACTS and a STUDENT ANSWER. Here is the grade criteria to follow:
     (1) Ensure the STUDENT ANSWER is grounded in the FACTS. (2) Ensure the STUDENT ANSWER does not contain "hallucinated" information outside the scope of the FACTS.
@@ -40,7 +39,7 @@ def groundedness(outputs: dict) -> dict:
     grounded_llm = fast_model.with_structured_output(GroundedGrade)
     answer = f"FACTS: {outputs['context']}\n\nSTUDENT ANSWER: {outputs['answer']}"
 
-    grade = grounded_llm.invoke(
+    grade = await grounded_llm.ainvoke(
         [
             {"role": "system", "content": grounded_instructions},
             {"role": "user", "content": answer},
@@ -53,7 +52,7 @@ def groundedness(outputs: dict) -> dict:
     }
 
 
-def correctness(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
+async def correctness(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
     """An evaluator for RAG answer accuracy"""
 
     class CorrectnessGrade(TypedDict):
@@ -78,7 +77,7 @@ def correctness(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
         GROUND TRUTH ANSWER: {reference_outputs["answer"]}\n\n
         STUDENT ANSWER: {outputs["answer"]}"""
 
-    grade = grounded_llm.invoke(
+    grade = await grounded_llm.ainvoke(
         [
             {"role": "system", "content": correctness_instructions},
             {"role": "user", "content": answer},
@@ -92,14 +91,12 @@ def correctness(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
     }
 
 
-def relevance(inputs: dict, outputs: dict) -> dict:
+async def relevance(inputs: dict, outputs: dict) -> dict:
     """A simple evaluator for RAG answer helpfulness."""
 
     class RelevanceGrade(TypedDict):
         explanation: Annotated[str, ..., "Explain your reasoning for the score"]
-        relevant: Annotated[
-            int, ..., "Provide the score on whether the answer addresses the question"
-        ]
+        relevant: Annotated[int, ..., "Provide the score on whether the answer addresses the question"]
 
     relevance_instructions = """You are a teacher grading a quiz. You will be given a QUESTION and a STUDENT ANSWER. Here is the grade criteria to follow:
     (1) Ensure the STUDENT ANSWER is concise and relevant to the QUESTION
@@ -116,7 +113,7 @@ def relevance(inputs: dict, outputs: dict) -> dict:
 
     answer = f"QUESTION: {inputs['question']}\nSTUDENT ANSWER: {outputs['answer']}"
 
-    grade = grounded_llm.invoke(
+    grade = await grounded_llm.ainvoke(
         [
             {"role": "system", "content": relevance_instructions},
             {"role": "user", "content": answer},
@@ -130,7 +127,7 @@ def relevance(inputs: dict, outputs: dict) -> dict:
     }
 
 
-def retrieval_relevance(inputs: dict, outputs: dict) -> dict:
+async def retrieval_relevance(inputs: dict, outputs: dict) -> dict:
     """An evaluator for document relevance"""
 
     class RetrievalRelevanceGrade(TypedDict):
@@ -154,7 +151,7 @@ def retrieval_relevance(inputs: dict, outputs: dict) -> dict:
 
     answer = f"FACTS: {outputs['context']}\nQUESTION: {inputs['question']}"
 
-    grade = grounded_llm.invoke(
+    grade = await grounded_llm.ainvoke(
         [
             {"role": "system", "content": retrieval_relevance_instructions},
             {"role": "user", "content": answer},
@@ -168,9 +165,9 @@ def retrieval_relevance(inputs: dict, outputs: dict) -> dict:
     }
 
 
-def call_agent(agent, inputs: dict):
+async def call_agent(agent, inputs: dict):
     messages = [{"role": "user", "content": inputs["question"]}]
-    result = agent.invoke({"messages": messages})
+    result = await agent.ainvoke({"messages": messages})
 
     tool_massages = [
         message
@@ -183,18 +180,21 @@ def call_agent(agent, inputs: dict):
     else:
         return {"answer": result["messages"][-1].content}
 
-
-def test_rag_model_1(client):
+@pytest.mark.asyncio
+async def test_rag_model_1():
     simpleRagAgent = SimpleRagAgent()
     agent = simpleRagAgent.get_agent()
 
-    simpleRagAgent.load_data(
-        web_paths=("https://lilianweng.github.io/posts/2023-06-23-agent",)
+    await simpleRagAgent.load_data(
+        web_paths=["https://lilianweng.github.io/posts/2023-06-23-agent"]
     )
 
-    client.evaluate(
-        lambda inputs: call_agent(agent, inputs),
-        data="rag_test",
+    async def target(inputs):
+        return await call_agent(agent, inputs)
+    
+    await aevaluate(
+        target,
+        data="rag_test", # data are already created
         evaluators=[groundedness, correctness, relevance, retrieval_relevance],
         experiment_prefix="test-simple-rag-model-1",
         metadata={
@@ -202,18 +202,21 @@ def test_rag_model_1(client):
         },
     )
 
-
-def test_rag_model_2(client):
-    simpleRagAgent = SimpleRagAgent(model="claude-haiku-4-5-20251001")
+@pytest.mark.asyncio
+async def test_rag_model_2():
+    simpleRagAgent = SimpleRagAgent(model=fast_model)
     agent = simpleRagAgent.get_agent()
 
-    simpleRagAgent.load_data(
-        web_paths=("https://lilianweng.github.io/posts/2023-06-23-agent",)
+    await simpleRagAgent.load_data(
+        web_paths=["https://lilianweng.github.io/posts/2023-06-23-agent"]
     )
 
-    client.evaluate(
-        lambda inputs: call_agent(agent, inputs),
-        data="rag_test",
+    async def target(inputs):
+        return await call_agent(agent, inputs)
+
+    await aevaluate(
+        target,
+        data="rag_test", # data are already created
         evaluators=[groundedness, correctness, relevance, retrieval_relevance],
         experiment_prefix="test-simple-rag-model-2",
         metadata={
