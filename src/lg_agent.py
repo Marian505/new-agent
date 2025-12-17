@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from langchain.chat_models import init_chat_model
+from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage
 from langchain_tavily import TavilySearch
 from langgraph.constants import END, START
@@ -8,16 +8,16 @@ from langgraph.prebuilt import ToolNode
 
 load_dotenv()
 
+smart_model = ChatAnthropic(model="claude-sonnet-4-5-20250929", temperature=0.0)
 search = TavilySearch(max_results=3)
-model = init_chat_model("claude-sonnet-4-5-20250929", temperature=0.0)
 tools = [search]
-model_with_tools = model.bind_tools(tools)
+model_with_tools = smart_model.bind_tools(tools)
 
 
-def call_model(state: MessagesState):
-    system_msg = f"You are a helpful assistant talking to the user."
-    response = model_with_tools.invoke([SystemMessage(content=system_msg)] + state["messages"])
-    return {"messages": [response]}
+async def call_model(state: MessagesState):
+    system_msg = "You are a helpful assistant talking to the user."
+    result = await model_with_tools.ainvoke([SystemMessage(content=system_msg)] + state["messages"])
+    return {"messages": [result]}
 
 def should_continue(state: MessagesState):
     """Determines the next step based on the model's last message."""

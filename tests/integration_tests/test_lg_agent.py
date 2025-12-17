@@ -2,20 +2,22 @@ import pytest
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langsmith import testing as t
-from rich.pretty import pprint
+import pytest_asyncio
+from rich.pretty import pprint # noqa: F401
 
 from lg_agent import graph
 
-@pytest.fixture
-def agent():
+@pytest_asyncio.fixture
+async def agent():
     checkpointer = InMemorySaver()
     return graph.compile(checkpointer=checkpointer)
 
+@pytest.mark.asyncio
 @pytest.mark.langsmith(test_suite_name="test_lg_agent")
-def test_lg_agent(agent):
+async def test_lg_agent(agent):
     config = {"configurable": {"thread_id": "test_workflow"}}
     inputs = {"messages": [HumanMessage(content="What is java?")]}
-    result = agent.invoke(inputs, config=config)
+    result = await agent.ainvoke(inputs, config=config)
 
     t.log_inputs(inputs)
     t.log_outputs(result)
@@ -25,11 +27,12 @@ def test_lg_agent(agent):
     tool_massage = [message for message in result["messages"] if message.__class__.__name__ == "ToolMessage"]
     assert len(tool_massage) == 0
 
+@pytest.mark.asyncio
 @pytest.mark.langsmith(test_suite_name="test_lg_agent_web_search")
-def test_lg_agent_web_search(agent):
+async def test_lg_agent_web_search(agent):
     config = {"configurable": {"thread_id": "test_workflow"}}
     inputs = {"messages": [HumanMessage(content="Search on what is java?")]}
-    result = agent.invoke(inputs, config=config)
+    result = await agent.ainvoke(inputs, config=config)
 
     t.log_inputs(inputs)
     t.log_outputs(result)
