@@ -21,8 +21,6 @@ subagents = [
     }
 ]
 
-class CustomState(AgentState):
-    pass
 
 system_prompt="You are a helpful assistant. Use subagents for specialized tasks."
 
@@ -30,6 +28,5 @@ agent = create_deep_agent(
     model=fast_model,
     system_prompt=system_prompt,
     tools=file_tools,
-    subagents=subagents,
-    state_schema=CustomState
+    subagents=subagents
 )
