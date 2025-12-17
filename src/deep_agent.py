@@ -1,44 +1,35 @@
 import os
-from typing import Literal
-
 from dotenv import load_dotenv
 from deepagents import create_deep_agent
+from langchain.agents import AgentState
 from langchain_community.agent_toolkits import FileManagementToolkit
-from tavily import TavilyClient
-from langchain.chat_models import init_chat_model
+from langchain_tavily import TavilySearch
+from langchain_anthropic import ChatAnthropic
 
 load_dotenv()
 
-tavily_client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
+fast_model=ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0.0)
 file_tools = FileManagementToolkit(root_dir=str(os.getcwd() + "/files")).get_tools()
-fast_model=init_chat_model("claude-haiku-4-5-20251001", temperature=0.0)
-
-def internet_search(
-        query: str,
-        max_results: int = 5,
-        topic: Literal["general", "news", "finance"] = "general",
-        include_raw_content: bool = False,
-):
-    """Run a web search"""
-    return tavily_client.search(
-        query,
-        max_results=max_results,
-        include_raw_content=include_raw_content,
-        topic=topic,
-    )
+search = TavilySearch(max_results=3)
 
 subagents = [
     {
         "name": "web-search-agent",
         "description": "Agent with access to websearch tool",
         "system_prompt": "Search the internet for information and collect them to response.",
-        "tools": [internet_search],
+        "tools": [search],
     }
 ]
 
+class CustomState(AgentState):
+    pass
+
+system_prompt="You are a helpful assistant. Use subagents for specialized tasks."
+
 agent = create_deep_agent(
     model=fast_model,
-    system_prompt="You are a helpful assistant. Use subagents for specialized tasks.",
+    system_prompt=system_prompt,
     tools=file_tools,
-    subagents=subagents
+    subagents=subagents,
+    state_schema=CustomState
 )
