@@ -3,23 +3,24 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langsmith import testing as t
 from lg_workflow import State, workflow
 from langgraph.types import Command
+import pytest_asyncio
 
 
-@pytest.fixture
-def graph():
+@pytest_asyncio.fixture
+async def graph():
     checkpointer = InMemorySaver()
     return workflow.compile(checkpointer=checkpointer)
 
-
+@pytest.mark.asyncio
 @pytest.mark.langsmith(test_suite_name="test_fast_workflow")
-def test_fast_workflow(graph):
+async def test_fast_workflow(graph):
     config = {"configurable": {"thread_id": "test_workflow"}}
     state = State(user_prompt="What is java?", enhanced_prompt={}, model_type="fast")
-    result = graph.invoke(state, config=config)
+    result = await graph.ainvoke(state, config=config)
 
     assert "__interrupt__" in result
 
-    result  = graph.invoke(Command(resume="fast"), config=config)
+    result  = await graph.ainvoke(Command(resume="fast"), config=config)
     t.log_inputs(state)
     t.log_outputs(result)
 
@@ -30,15 +31,16 @@ def test_fast_workflow(graph):
     assert "model_type" in result
     assert "fast" in result['model_type']
 
+@pytest.mark.asyncio
 @pytest.mark.langsmith(test_suite_name="test_smart_workflow")
-def test_smart_workflow(graph):
+async def test_smart_workflow(graph):
     config = {"configurable": {"thread_id": "test_workflow"}}
     state = State(user_prompt="What is java?", enhanced_prompt={}, model_type="smart")
-    result = graph.invoke(state, config=config)
+    result = await graph.ainvoke(state, config=config)
 
     assert "__interrupt__" in result
 
-    result  = graph.invoke(Command(resume="smart"), config=config)
+    result  = await graph.ainvoke(Command(resume="smart"), config=config)
     t.log_inputs(state)
     t.log_outputs(result)
 
@@ -50,15 +52,16 @@ def test_smart_workflow(graph):
     assert "smart" in result['model_type']
 
 # this test is too long and expensive
+# @pytest.mark.asyncio
 # @pytest.mark.langsmith(test_suite_name="test_premium_workflow")
-# def test_premium_workflow(graph):
+# async def test_premium_workflow(graph):
 #     config = {"configurable": {"thread_id": "test_workflow"}}
 #     state = State(user_prompt="What is java?", enhanced_prompt={}, model_type="premium")
-#     result = graph.invoke(state, config=config)
+#     result = await graph.ainvoke(state, config=config)
 
 #     assert "__interrupt__" in result
 
-#     result  = graph.invoke(Command(resume="premium"), config=config)
+#     result  = await graph.ainvoke(Command(resume="premium"), config=config)
 #     t.log_inputs(state)
 #     t.log_outputs(result)
 
