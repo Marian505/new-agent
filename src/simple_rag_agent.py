@@ -42,9 +42,7 @@ class SimpleRagAgent:
             web_paths=web_paths,
             bs_kwargs={"parse_only": bs4_strainer},
         )
-        docs = []
-        async for doc in loader.alazy_load():
-            docs.append(doc)        
+        docs = loader.load()
         all_docs = self._splitter.split_documents(docs)
         doc_ids = await self._vector_store.aadd_documents(documents=all_docs)
         return len(doc_ids)
