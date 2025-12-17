@@ -12,8 +12,8 @@ async def test_lc_agent():
     result = await agent.ainvoke(inputs)
 
     # print(result["structured_response"])
-    t.log_inputs({"messages": inputs["messages"]})
-    t.log_outputs({"messages": result["messages"]})
+    t.log_inputs(inputs)
+    t.log_outputs(result)
     t.log_reference_outputs({"messages": "here should be reference_trajectory"})
 
     assert True
