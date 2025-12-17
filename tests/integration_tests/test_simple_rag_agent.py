@@ -1,7 +1,7 @@
 import pytest
 from typing import Annotated, TypedDict
 import pytest_asyncio
-from rich.pretty import pprint
+from rich.pretty import pprint # noqa: F401
 
 from langsmith import AsyncClient
 from langsmith.evaluation import aevaluate
