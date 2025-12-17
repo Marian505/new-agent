@@ -5,14 +5,15 @@ from langchain_core.messages import HumanMessage
 
 from lc_agent import agent
 
+@pytest.mark.asyncio
 @pytest.mark.langsmith(test_suite_name="test_lc_agent")
-def test_lc_agent():
-    inputs = {"messages": [HumanMessage("What is java?")]}
-    result = agent.invoke(inputs)
+async def test_lc_agent():
+    inputs = {"messages": [HumanMessage(content="What is java?")]}
+    result = await agent.ainvoke(inputs)
 
     # print(result["structured_response"])
-    t.log_inputs(inputs["messages"])
-    t.log_outputs(result["messages"])
+    t.log_inputs({"messages": inputs["messages"]})
+    t.log_outputs({"messages": result["messages"]})
     t.log_reference_outputs({"messages": "here should be reference_trajectory"})
 
     assert True

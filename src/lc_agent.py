@@ -1,98 +1,75 @@
 import os
 import logging
-
+from typing import Any
 from dotenv import load_dotenv
+import httpx 
+
 from langchain.agents import create_agent, AgentState
-from langchain.agents.middleware import before_model, after_model, before_agent, \
-    SummarizationMiddleware, HumanInTheLoopMiddleware, PIIMiddleware
-from langchain.chat_models import init_chat_model
+from langchain.agents.middleware import before_agent
+from langchain_anthropic import ChatAnthropic
 from langchain_community.agent_toolkits import FileManagementToolkit
-from langchain_tavily import TavilySearch
 from langgraph.runtime import Runtime
 from langchain.tools import tool
-from pydantic import BaseModel
-import httpx 
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-search = TavilySearch(max_results=3)
+fast_model = ChatAnthropic(model="claude-haiku-4-5-20251001", temperature=0.0)
+smart_model = ChatAnthropic(model="claude-sonnet-4-5-20250929", temperature=0.0)
 file_tools = FileManagementToolkit(root_dir=str(os.getcwd() + "/files")).get_tools()
-model=init_chat_model("claude-haiku-4-5-20251001", temperature=0.0)
-smart_model = init_chat_model("claude-sonnet-4-5-20250929", temperature=0.0)
-
-@before_model
-def log_before_model(state: AgentState, runtime: Runtime) -> dict | None:
-    # print(f"\nlog_before_model Sate:\n{state}")
-    print(f"\nCompleted request for user:\n{runtime}")
-    return None
-
-@after_model
-def log_after_model(state: AgentState, runtime: Runtime) -> dict | None:
-    # print(f"\nlog_after_model Sate:\n{state}")
-    print(f"\nCompleted request for user:\n{runtime}")
-    return None
-
-class EnhancedPropmpt(BaseModel):
-    original_prompt: str
-    enhanced_prompt: str
-
-structured_model = model.with_structured_output(EnhancedPropmpt)
-
-@before_agent 
-def prompt_enhance(state: AgentState, runtime: Runtime):
-    prompt = state["messages"][-1].content
-    prompt_len = len(prompt)
-    model_instructions = f"""
-        Enhance added prompt, fix typos, add capital letters, and special chars like '.,?!', correct gramar.
-        Minimal enhanced prompt length is: {prompt_len*2}
-        Maximal enhanced prompt length is: {prompt_len*3}
-        Prompt: {prompt}
-    """
-    result = structured_model.invoke(model_instructions)
-
-    state["messages"][-1].content = result.enhanced_prompt
-    return None
 
 @tool
-async def html_to_pdf(html: str):
+async def html_to_pdf(html: str) -> str:
     """Tool for create PDF from HTML.
     Function parameter has to be just valid HTML in string.
     """
-    async with httpx.AsyncClient() as client:
-        resposne = await client.post(
-            "https://pdf.weakpass.org/api/html-to-pdf",
-            content=html,
-            headers={"Content-Type": "text/html"}
-        ) 
-        print(f"resposne:\n{resposne.content}")
-    return "PDF generated"
+    try:
+        async with httpx.AsyncClient() as client:
+            _resposne = await client.post(
+                "https://pdf.weakpass.org/api/html-to-pdf",
+                content=html,
+                headers={"Content-Type": "text/html"}
+            ) 
+        return "PDF generated successfully"
+    except Exception as e:
+        return f"PDF generation failed: {str(e)}"
 
-system_prompt="""
-    You CV assistant. 
-    You will read and analyze PDF on user demand. 
-    Generate valid HTML And generate PDF on user demand.
-    For PDF generation use tool generate_pdf_from_html on user demand.
+@before_agent
+async def prompt_enhance(state: AgentState, runtime: Runtime) -> dict[str, Any] | None:
+    """Enhance user prompt before agent runs."""
+    if not state.get("messages"):
+        return None
+    
+    prompt = state["messages"][-1].content
+    prompt_len = len(prompt)
+    
+    instructions = f"""
+    Enhance this user prompt:
+    - Fix typos and grammar
+    - Add proper capitalization  
+    - Include punctuation (.,?!)
+    - Min length: {prompt_len*2}, Max: {prompt_len*3}
+    
+    Original: {prompt}
+    """
+    
+    result = await fast_model.ainvoke(instructions)
+    enhanced_prompt = result.content
+    
+    return {"messages": state["messages"][:-1] + [
+        type(state["messages"][-1])(content=enhanced_prompt)
+    ]}
+
+system_prompt = """
+You CV assistant. 
+You will read and analyze PDF on user demand. 
+Generate valid HTML And generate PDF on user demand.
+For PDF generation use tool generate_pdf_from_html on user demand.
 """
 agent = create_agent(
-    model=model,
+    model=fast_model,
     tools=file_tools + [html_to_pdf],
-    middleware=[
-        prompt_enhance
-        # log_before_model,
-        # PIIMiddleware("ip", strategy="mask", apply_to_input=True),
-        # PIIMiddleware("api_key", detector=r"sk-[a-zA-Z0-9]", strategy="redact", apply_to_input=True),
-        # SummarizationMiddleware(
-        #     model="claude-haiku-4-5-20251001",
-        #     trigger=("tokens", 10000),
-        #     keep=("messages", 3),
-        # ),
-        # HumanInTheLoopMiddleware(
-        #     interrupt_on={
-        #         "simple_pdf_from_html": True,
-        #     }
-        # ),
-    ],
+    middleware=[prompt_enhance],
     system_prompt=system_prompt
 )
